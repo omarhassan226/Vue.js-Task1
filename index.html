@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+    <script src="./vue.js"></script>
+</head>
+
+<body>
+    <div id="body">
+        <nav class="navbar navbar-dark bg-dark">
+            <div class="container">
+                <a class="navbar-brand mb-0 h1" style="cursor: pointer;" @click="isInWishlist = false">Books</a>
+                <button class="btn btn-warning" @click="isInWishlist = true">Cart</button>
+            </div>
+        </nav>
+
+        <div class="container-fluid" v-if="!isInWishlist">
+            <div class="row d-flex justify-content-md-between justify-content-md-center">
+                <div class="col-xl-3 col-md-5 col-11 m-xl-4 m-2 border border-secondary rounded" v-for="book in books">
+                    <div class="py-2 d-flex flex-column justify-content-center">
+                        <img :src="book.imageLink" class="w-100" style="object-fit: contain; height: 350px;" />
+
+                        <div class="mt-4">
+                            <p class="fs-5 text-center bg-dark text-white rounded">{{book.title}}</p>
+                            <p class="fs-4 text-center">By <span class="fst-italic text-bold">{{book.author}}</span> -
+                                {{book.year}}</p>
+
+                            <div class="d-flex justify-content-around">
+                                <span>Pages: <span class="text-bold">{{book.pages}}</span></span>
+                                <span>Price: <span class="text-bold">{{getPrice(book.price)}}</span></span>
+                            </div>
+
+                            <div class="d-flex justify-content-around">
+                                <span>{{book.country}}</span>
+                                <span>{{book.language}}</span>
+                            </div>
+
+                            <!-- Add to Cart button -->
+                            <button class="btn btn-warning w-100 mt-4" @click="addToCart(book)"
+                                :disabled="book.stock==0">Add To Cart</button>
+
+                            <!-- Display number in stock -->
+                            <div class="mt-4">
+                                <p>
+                                    <span :class="{
+                                        'text-danger': book.stock === 0,
+                                        'text-warning': book.stock < 5 && book.stock > 0,
+                                        'text-success': book.stock >= 5
+                                    }">
+                                        <span class="stock-label">Stock:</span>
+                                        {{ book.stock }}
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="container-fluid" v-if="isInWishlist">
+            <table class="table" v-if="wishlist.length != 0">
+                <thead>
+                    <tr>
+                        <th scope="col">Title</th>
+                        <th scope="col">Author</th>
+                        <th></th>
+                        <th scope="col">Quantity</th>
+                        <th scope="col">Price</th>
+                        <th scope="col"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(book, index) in wishlist">
+                        <th scope="row">{{index+1}}</th>
+                        <td>{{book.title}}</td>
+                        <td>{{book.Author}}</td>
+                        <td>{{book.quantity}}</td>
+                        <td>{{getPrice(book.price)}}</td>
+                        <td class="d-flex justify-content-center">
+                            <button @click="decreaseQuantity(book)"  class="btn btn-danger ">-</button>
+                            <button v-if="book.stock === 0" :disabled="true" class="btn btn-success">+</button>
+                            <button v-else @click="increaseQuantity(book)" class="btn btn-success">+</button>
+                        </td>
+                    </tr>
+                </tbody>
+
+                <tfoot>
+                    <tr>
+                        <td class="table-dark" colspan="5">Total Price:</td>
+                        <td class="table-dark d-flex justify-content-center text-bold" colspan="1">{{getPrice(calcTotalPrice())}}
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <p class="fs-1 text-center mt-5 text-bold" v-if="wishlist.length === 0">
+                Wishlist is empty
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const books = [
+            {
+                "id":"1",
+                "author": "Jane Austen",
+                "country": "United Kingdom",
+                "imageLink": "images/sons-and-lovers.jpg",
+                "language": "English",
+                "link": "https://en.wikipedia.org/wiki/Pride_and_Prejudice\n",
+                "pages": 226,
+                "title": "Pride and Prejudice",
+                "price": 500,
+                "inWishlist": false,
+                "year": 1813,
+                "stock" : 200,
+                "quantity":0
+            },
+            {
+                "id":"2",
+                "author": "Honor\u00e9 de Balzac",
+                "country": "France",
+                "imageLink": "images/the-death-of-ivan-ilyich.jpg",
+                "language": "French",
+                "link": "https://en.wikipedia.org/wiki/Le_P%C3%A8re_Goriot\n",
+                "pages": 443,
+                "title": "Le P\u00e8re Goriot",
+                "price": 600,
+                "inWishlist": false,
+                "year": 1835,
+                "stock" : 3,
+                "quantity":0
+            },
+            {
+                "id":"4",
+                "author": "Jorge Luis Borges",
+                "country": "Argentina",
+                "imageLink": "images/ficciones.jpg",
+                "language": "Spanish",
+                "link": "https://en.wikipedia.org/wiki/Ficciones\n",
+                "pages": 224,
+                "title": "Ficciones",
+                "price": 450,
+                "inWishlist": false,
+                "year": 1965,
+                "stock" : 10,
+                "quantity":0
+            },
+            {
+                "id":"5",
+                "author": "Emily Bront\u00eb",
+                "country": "United Kingdom",
+                "imageLink": "images/wuthering-heights.jpg",
+                "language": "English",
+                "link": "https://en.wikipedia.org/wiki/Wuthering_Heights\n",
+                "pages": 342,
+                "title": "Wuthering Heights",
+                "price": 740,
+                "inWishlist": false,
+                "year": 1847,
+                "stock" : 4,
+                "quantity":0
+            },
+            {
+                "id":"6",
+                "author": "Albert Camus",
+                "country": "Algeria, French Empire",
+                "imageLink": "images/voyage-au-bout-de-la-nuit.jpg",
+                "language": "French",
+                "link": "https://en.wikipedia.org/wiki/The_Stranger_(novel)\n",
+                "pages": 185,
+                "title": "The Stranger",
+                "price": 120,
+                "inWishlist": false,
+                "year": 1942,
+                "stock" : 2,
+                "quantity":0
+            },
+            {
+                "id":"7",
+                "author": "Paul Celan",
+                "country": "Romania, France",
+                "imageLink": "images/mrs-dalloway.jpg",
+                "language": "German",
+                "link": "\n",
+                "pages": 320,
+                "title": "Poems",
+                "price": 880,
+                "inWishlist": false,
+                "year": 1952,
+                "stock" : 20,
+                "quantity":0
+            },
+        ]
+    </script>
+
+    <script>
+        const app = Vue.createApp({
+            data() {
+                return {
+                    books,
+                    isInWishlist: false,
+                    wishlist: []
+                }
+            },
+            methods: {
+                increaseQuantity(item) {
+                    if (item.stock > 0) {
+                        item.quantity++;
+                        item.stock--;
+                        this.calcTotalPrice();
+                    }
+                },
+
+                decreaseQuantity(item) {
+                    if (item.quantity > 1) {
+                        item.quantity--;
+                        item.stock++;
+                        this.calcTotalPrice();
+                    }
+                    else if(item.quantity == 1){
+                    let index = this.wishlist.findIndex((book) => item.id === book.id);
+                    item.inWishlist = false;
+                    this.wishlist.splice(index, 1);
+                    item.stock++;
+                    }
+                },
+
+                addToCart(item) {
+                    if (item.stock > 0) {
+                        const existingItem = this.wishlist.find(cartItem => cartItem.id === item.id);
+                        if (existingItem) {
+                            existingItem.quantity++;
+                            item.stock--; // Decrease stock
+                        } else {
+                            item.quantity = 1;
+                            item.inWishlist = true;
+                            item.stock--; // Decrease stock
+                            this.wishlist.push(item); // Add to cart
+                        }
+                        // Calculate total price
+                        this.calcTotalPrice();
+                    }
+                },
+
+                calcTotalPrice() {
+                    total = 0;
+                    this.wishlist.forEach(element => {
+                        total += element.price * element.quantity;
+                    });
+
+                    return total;
+                },
+
+                getPrice(price) {
+                    return Intl.NumberFormat('en-us', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(
+                        price,
+                    )
+                }
+            }
+        }); // pass to it an object, return ref to created instance
+
+        app.mount('#body');
+    </script>
+</body>
+
+</html>
